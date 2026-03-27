@@ -1,6 +1,6 @@
-pyrebase
-pycryptodome
 streamlit
-folium
 streamlit-folium
+folium
+pandas
 geopy
+pyrebase4

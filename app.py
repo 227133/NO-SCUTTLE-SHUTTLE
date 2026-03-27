@@ -5,7 +5,7 @@ import folium
 from streamlit_folium import st_folium
 from geopy.distance import geodesic
 import time
- HEAD
+HEAD
 import pyrebase4 as pyrebase
 
 import pyrebase

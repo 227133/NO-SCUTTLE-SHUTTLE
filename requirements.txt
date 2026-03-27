@@ -1,7 +1,6 @@
- HEAD
+Plaintext
 streamlit
-folium
 streamlit-folium
-geopy
-pyrebase
+folium
+pandas
 pycryptodome

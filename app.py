@@ -3,7 +3,7 @@ import folium
 from streamlit_folium import st_folium
 from geopy.distance import geodesic
 import time
-import pyrebase4 as pyrebase
+import pyrebase
 
 # 🔑 FIREBASE CONFIG
 config = {
@@ -16,13 +16,13 @@ config = {
     "appId": "1:1072916906361:web:8ae088fa2b48b53a45afa8"
 }
 
-# Safe Firebase Initialization
-if 'db' not in st.session_state:
-    try:
-        firebase = pyrebase.initialize_app(config)
-        st.session_state.db = firebase.database()
-    except:
-        st.error("Firebase connection failed.")
+# Initialize Firebase (Global)
+@st.cache_resource
+def init_db():
+    firebase = pyrebase.initialize_app(config)
+    return firebase.database()
+
+db = init_db()
 
 # 🎨 PAGE CONFIG
 st.set_page_config(page_title="No Scuttle Shuttle", layout="centered")
@@ -55,25 +55,14 @@ if "user_voted" not in st.session_state:
 
 # 🔄 SYNC FIREBASE
 try:
-    live_votes = st.session_state.db.child("votes").get().val()
+    live_votes = db.child("votes").get().val()
     if live_votes:
         st.session_state.votes = live_votes
-    live_index = st.session_state.db.child("bus_location").get().val()
+    live_index = db.child("bus_location").get().val()
     if live_index is not None:
         st.session_state.current_index = live_index
 except:
     pass
-
-# ⚙️ FUNCTIONS
-def calculate_eta(start, end):
-    distance = geodesic(start, end).km
-    return round((distance / 20) * 60, 1)
-
-def get_crowd_status(v):
-    if sum(v.values()) == 0: return "⚪ No Data"
-    if v["red"] >= v["yellow"] and v["red"] >= v["green"]: return "🔴 Full"
-    if v["yellow"] > v["green"]: return "🟡 Tight"
-    return "🟢 Free"
 
 # 🚐 BUS LOCATION
 current_stop = ROUTE[st.session_state.current_index]
@@ -97,40 +86,42 @@ with col1:
     new_loc = st.selectbox("I see it at:", ROUTE, index=st.session_state.current_index)
     if st.button("Confirm Location"):
         new_idx = ROUTE.index(new_loc)
-        st.session_state.db.child("bus_location").set(new_idx)
+        db.child("bus_location").set(new_idx)
         st.session_state.current_index = new_idx
         st.rerun()
 
 with col2:
-    st.subheader("📊 Crowd")
+    st.subheader("📊 Crowd Status")
+    v = st.session_state.votes
+    status = "🟢 Free"
+    if sum(v.values()) > 0:
+        if v["red"] >= v["yellow"] and v["red"] >= v["green"]: status = "🔴 Full"
+        elif v["yellow"] > v["green"]: status = "🟡 Tight"
+    
+    st.metric("Current Status", status)
+    
     if not st.session_state.user_voted:
         c1, c2, c3 = st.columns(3)
         if c1.button("🟢"):
-            st.session_state.votes["green"] += 1
-            st.session_state.db.child("votes").set(st.session_state.votes)
+            v["green"] += 1
+            db.child("votes").set(v)
             st.session_state.user_voted = True
             st.rerun()
         if c2.button("🟡"):
-            st.session_state.votes["yellow"] += 1
-            st.session_state.db.child("votes").set(st.session_state.votes)
+            v["yellow"] += 1
+            db.child("votes").set(v)
             st.session_state.user_voted = True
             st.rerun()
         if c3.button("🔴"):
-            st.session_state.votes["red"] += 1
-            st.session_state.db.child("votes").set(st.session_state.votes)
+            v["red"] += 1
+            db.child("votes").set(v)
             st.session_state.user_voted = True
             st.rerun()
-    st.metric("Status", get_crowd_status(st.session_state.votes))
 
 st.divider()
 
-# ⏱️ ETA & REPORT
-my_stop = st.selectbox("Your stop:", ROUTE)
-eta_val = calculate_eta(current_coord, STOPS[my_stop])
-st.write(f"ETA: {eta_val} mins" if my_stop != current_stop else "Bus is here!")
-
-with st.expander("⚠ Report Issue"):
-    issue = st.text_input("Describe...")
-    if st.button("Submit"):
-        st.session_state.db.child("reports").push({"issue": issue, "time": time.ctime(), "stop": current_stop})
-        st.success("Reported!")
+# ⏱️ ETA
+my_stop = st.selectbox("Where are you?", ROUTE)
+dist = geodesic(current_coord, STOPS[my_stop]).km
+eta = round((dist / 20) * 60, 1)
+st.write(f"Wait time: *{eta} mins*" if my_stop != current_stop else "Bus is here!")

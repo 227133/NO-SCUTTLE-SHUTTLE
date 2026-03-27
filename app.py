@@ -3,7 +3,7 @@ import folium
 from streamlit_folium import st_folium
 from geopy.distance import geodesic
 import time
-import pyrebase4 as pyrebase   # ✅ FIXED IMPORT
+import pyrebase   
 
 # 🔑 FIREBASE CONFIG
 config = {

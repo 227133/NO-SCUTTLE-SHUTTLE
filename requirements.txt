@@ -4,6 +4,3 @@ streamlit-folium
 folium
 pandas
 pycryptodome
-git add .
-git commit -m "Fixing requirements for Render"
-git push origin main

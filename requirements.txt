@@ -1,4 +1,4 @@
-pyrebase4==4.8.0
+pyrebase
 pycryptodome
 streamlit
 folium

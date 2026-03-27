@@ -3,4 +3,4 @@ streamlit-folium
 folium
 pandas
 geopy
-pyrebase4
+pyrebase4==4.7.1

@@ -1,6 +1,13 @@
+ HEAD
+streamlit
+folium
+streamlit-folium
+geopy
+pyrebase
 streamlit
 folium
 streamlit-folium
 geopy
 pyrebase4
+ 1bec73e30717548b1318eb2e1d80b44617748404
 pycryptodome
